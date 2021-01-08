@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql');
+const auth = require('./middleware/auth');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 require('dotenv').config();
 
@@ -25,6 +28,141 @@ connection.connect(function(err) {
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//SIGNING FUNCTIONS
+
+app.post('/signup', async (req, res)=>{
+  const admin = req.body;
+  const input = 'INSERT INTO admins (name, email, password) VALUES (?, ?, ?)';
+  
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(admin.password, salt);
+
+  connection.query(input, [admin.name, admin.email, hashedPassword], (err, result)=>{
+    
+    if(err){
+      res.status(400).json({mg: "Email is already in use."});
+    }
+    
+    if(!admin.name || !admin.email || !admin.password){
+      res.status(400).json({mg: "Please enter all fields"});
+    }
+
+    function validateEmail(email) {
+      const re = /\S+@\S+\.\S+/;
+      return re.test(email);
+    }
+      
+    if (!validateEmail(admin.email)) {
+      res.status(400).json({mg: "Please enter a valid email"});
+    }
+    
+    if (admin.password.length < 5) {
+      res.status(400).json({mg: "Password must be atleast 5 characters."});
+    }
+    
+    res.send(result);
+  
+  });
+
+});
+
+app.post('/signin', async (req, res)=>{
+  
+  try{
+
+    const {mail, pass} = req.body;
+
+    if(!mail || !pass){
+      res.status(400).json({mg: "Please enter all fields"})
+    }
+  
+    var checkUser = false;
+
+    var getUser = function(cb){
+      connection.query('SELECT COUNT(1) AS result FROM admins WHERE email = ?;', [mail], (err, result)=>{
+        if(err) return cb(err);
+    
+        if(JSON.stringify(result[0]) == '{"result":1}') checkUser = true;
+
+        cb(null, checkUser);
+  
+      });
+    };
+
+    getUser(function (err, result){
+      if (err) throw err;
+      
+      if(checkUser == false) res.status(400).json({msg: "This email has not been registerd."})
+
+    });
+
+    var checkPass = false;
+
+    var getPass = function(cb){
+      connection.query('SELECT password AS x FROM admins WHERE email = ?;', [mail], async (err, result)=>{
+        if(err) return cb(err);
+        
+        checkPass = await bcrypt.compare(pass, result[0].x);
+
+        cb(null, checkPass);
+  
+      });
+    };
+
+    getPass(function (err, result){
+      if (err) throw err;
+      
+      if(!checkPass) res.status(400).json({msg: "The password you entered is incorrect."})
+      
+    });
+    
+    var getID = function(cb){
+      connection.query('SELECT id FROM admins WHERE email = ?;', [mail], (err, result)=>{
+        if(err) return cb(err);
+        
+        var user_ID = result[0].id;
+
+        cb(null, user_ID);
+  
+      });
+    };
+
+    getID(function (err, result){
+      if (err) throw err;
+    
+      const token = jwt.sign({id: result}, process.env.TOKEN_SECRET);
+      res.send({
+        token,
+        admin: {
+          id: result,
+          email: mail,
+          password: pass
+        }
+      })
+      
+    });
+
+  } catch(err){
+    res.status(500).json({error:err.message}) 
+  }
+
+});
+
+app.put('/updateuser', auth, async (req,res)=>{
+  const admin = req.body;
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(admin.password, salt);
+
+  const command = "UPDATE admins SET name = ?, email = ?, password = ? WHERE id = ?;";
+  connection.query(command, [admin.name, admin.email, hashedPassword, admin.id], (err, rows, fields)=>{
+    if(err) throw err;
+    console.log(rows);
+    res.send('Admin Details Updated Successfully');
+  })
+})
+
+////////////////////////////////////////////////////////////////////////////////////////////
 //ADMINS FUNCTIONS
 
 app.get('/admins', (req, res)=>{
@@ -41,26 +179,7 @@ app.get('/admins/:id', (req, res)=>{
   });
 });
 
-app.post('/admins', (req, res)=>{
-  const admin = req.body;
-  const input = 'INSERT INTO admins (name, email, password) VALUES (?, ?, ?)';
-  connection.query(input, [admin.name, admin.email, admin.password], (err, result)=>{
-    if(err) throw err;
-    res.send(result);
-  });
-});
-
-app.put('/admins', (req,res)=>{
-  const admin = req.body;
-  const command = "UPDATE admins SET name = ?, email = ?, password = ? WHERE id = ?;";
-  connection.query(command, [admin.name, admin.email, admin.password, admin.id], (err, rows, fields)=>{
-    if(err) throw err;
-    console.log(rows);
-    res.send('Admin Details Updated Successfully');
-  })
-})
-
-app.delete('/admins/:id', (req, res)=>{
+app.delete('/admins/:id', auth, (req, res)=>{
   connection.query('DELETE FROM admins WHERE id = ?', [req.params.id], (err, rows, fields)=>{
     if(err) throw err;
     res.send(rows);
@@ -162,7 +281,6 @@ app.delete('/matches/:id', (req, res)=>{
     res.send(rows);
   });
 });
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
