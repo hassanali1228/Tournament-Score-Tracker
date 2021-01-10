@@ -207,7 +207,18 @@ app.post('/tournaments', (req, res)=>{
   const input = 'INSERT INTO tournaments (name, location, creator, admin_id) VALUES ("' + req.body.name+'","' + req.body.location+'","' + req.body.creator+'","' + req.body.admin_id+'")';
   connection.query(input, (err, result)=>{
     if(err) throw err;
-    res.send(result);
+    connection.query('SELECT id FROM tournaments WHERE creator = "' + req.body.creator+'"' , (err, rows)=>{
+      if(err) throw err;
+      console.log(rows[0].id);
+      res.send({
+          id: rows[0].id,
+          name: req.body.name,
+          location: req.body.location,
+          creator: req.body.creator,
+          admin_id: req.body.admin_id
+        }
+      )
+    });
   });
 });
 

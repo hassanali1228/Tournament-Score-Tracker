@@ -13,6 +13,4 @@ function auth (req, res, next){
     }
 }
 
-//router.post('/login');
-
 module.exports = auth;

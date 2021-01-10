@@ -24,7 +24,6 @@
                     token: res.data.token,
                     user: res.data.user,
                 })
-                console.log(res);
                 localStorage.setItem('auth-token', res.data.token);
                 localStorage.setItem('id', res.data.admin.id);
                 history.push('/');    

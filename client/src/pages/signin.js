@@ -3,11 +3,10 @@ import Signin from '../components/Signin'
 
 const signin = () => {
     return (
-        <>
+        <div>
             <Signin />
-            
-        </>
+        </div>
     )
 }
 
-export default Signin
+export default signin

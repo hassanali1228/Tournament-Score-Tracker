@@ -25,7 +25,6 @@ const Signup = () => {
                setUserData({
                    user: res.data.user,
                })
-               console.log(res);
                history.push('/signin');    
            },(err)=>{
                console.log(err);
