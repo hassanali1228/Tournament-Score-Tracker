@@ -20,8 +20,8 @@ function App() {
             <Route path='/signin' component={Signin} exact/>
             <Route path='/signup' component={Signup} exact/>
             <Route path='/update' component={Update} exact/>
-            <Route path='/createtournaments' component={Tournaments} exact/>
-            <Route path='/creatematches' component={Matches} exact/>
+            <Route path='/createtournament' component={Tournaments} exact/>
+            <Route path='/creatematch' component={Matches} exact/>
           </Switch>
       </BrowserRouter>
       
