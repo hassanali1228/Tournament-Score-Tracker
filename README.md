@@ -25,7 +25,7 @@ This project is an idea I got when I was attending a local high school football 
 * [Nodejs](https://nodejs.org/en/)
 * [ReactJS](https://reactjs.org/)
 * [Express.js](https://expressjs.com/)
-* [Nodejs](https://www.mysql.com/)
+* [MySQL](https://www.mysql.com/)
 
 
 <!-- GETTING STARTED -->
